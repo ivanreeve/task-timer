@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+  <title>Task Timer</title>
+</head>
+
+<body>
+  <div id="timer-settings">
+    <div class="timer__container">
+      <div class="timer__header">
+        <h1>Task Timer</h1>
+      </div>
+      <div class="timer__fields__container">
+        <div class="timer__hours__container">
+          <input type="number" class="timer__input" id="hours" min="0" max="23" value="0">
+          <div class="timer__label">Hours</div>
+        </div>
+        <div class="timer__minutes__container">
+          <input type="number" class="timer__input" id="minutes" min="0" max="59" value="0">
+          <div class="timer__label">Minutes</div>
+        </div>
+        <div class="timer__seconds__container">
+          <input type="number" class="timer__input" id="seconds" min="0" max="59" value="0">
+          <div class="timer__label">Seconds</div>
+        </div>
+      </div>
+      <div class="timer__footer">
+        <button class="timer__button" id="save">Save</button>
+      </div>
+    </div>
+  </div>
+  <script src="script.js" />
+</body>
+
+</html>
