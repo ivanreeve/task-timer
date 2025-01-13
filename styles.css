@@ -1,15 +1,19 @@
-root {}
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+
+root {
+  --color-timerbtn: #40a02b;
+}
 
 *,
 *::before,
 *::after {
   margin: 0px;
   padding: 0px;
-  /* outline: 1px solid red; */
+  outline: 1px solid red;
 }
 
 body {
-  font-family: monospace;
+  font-family: Nunito;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -39,6 +43,7 @@ body {
 }
 
 .timer__fields__container {
+  font-family: monospace;
   display: flex;
   justify-content: center;
   gap: 1rem;
@@ -80,18 +85,20 @@ body {
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s;
-}
-
-.timer__start {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.timer__reset {
-  background-color: #f44336;
-  color: white;
+  background-color: var(--color-timerbtn);
+  background-color: #40a02b;
+  font-weight: bold;
+  font-family: Nunito;
+  text-transform: uppercase;
 }
 
 .timer__button:hover {
   opacity: 0.9;
+}
+
+.sidebar__tasks__container {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
 }
