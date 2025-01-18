@@ -1,8 +1,6 @@
 let todos = JSON.parse(localStorage.getItem('todos')) || [];
 let timers = {};
 
-renderTodos();
-
 function addTodo() {
   const input = document.getElementById('todoInput');
   const todoText = input.value.trim();
@@ -14,10 +12,11 @@ function addTodo() {
       completed: false,
       elapsedTime: 0,
       targetTime: 0,
-      timeUp: false
+      timeUp: false,
+      createdAt: Date.now()
     };
 
-    todos.push(todo);
+    todos.unshift(todo); // Add new tasks to the beginning
     saveTodos();
     renderTodos();
     input.value = '';
@@ -27,6 +26,10 @@ function addTodo() {
 function toggleTodo(id) {
   todos = todos.map(todo => {
     if (todo.id === id) {
+      if (!todo.completed) {
+        // Reset timer when marking as complete
+        resetTimer(id);
+      }
       return { ...todo, completed: !todo.completed };
     }
     return todo;
@@ -43,27 +46,28 @@ function deleteTodo(id) {
   renderTodos();
 }
 
-function showEditDialogue(id) {
-  const todo = todos.find(todo => todo.id === id);
-  const todoText = prompt('Edit todo', todo.text);
-
-  if (todoText) {
-    todos = todos.map(todo => {
-      if (todo.id === id) {
-        return { ...todo, text: todoText };
-      }
-      return todo;
-    });
-
-    saveTodos();
-    renderTodos();
-  }
-}
-
-function setTargetTime(id, minutes) {
+function resetTimer(id) {
+  stopTimer(id);
   todos = todos.map(todo => {
     if (todo.id === id) {
-      return { ...todo, targetTime: minutes * 60 * 1000, timeUp: false };
+      return { ...todo, elapsedTime: 0, timeUp: false };
+    }
+    return todo;
+  });
+  saveTodos();
+  renderTodos();
+}
+
+function setTargetTime(id, hours, minutes, seconds) {
+  const totalMilliseconds = (
+    (parseInt(hours) || 0) * 3600000 +
+    (parseInt(minutes) || 0) * 60000 +
+    (parseInt(seconds) || 0) * 1000
+  );
+
+  todos = todos.map(todo => {
+    if (todo.id === id) {
+      return { ...todo, targetTime: totalMilliseconds, timeUp: false };
     }
     return todo;
   });
@@ -93,19 +97,15 @@ function startTimer(id, display) {
     const elapsedTime = Date.now() - startTime;
     display.textContent = formatTime(elapsedTime);
 
-    // Check if target time is reached
     if (todo.targetTime > 0 && elapsedTime >= todo.targetTime && !todo.timeUp) {
       const todoItem = document.querySelector(`[data-id="${id}"]`);
       todoItem.classList.add('time-up');
 
-      // Play sound
       const audio = document.getElementById('timerSound');
       audio.play();
 
-      // Show alert
       alert(`Time's up for task: ${todo.text}`);
 
-      // Mark as time up
       todos = todos.map(t => {
         if (t.id === id) {
           return { ...t, timeUp: true };
@@ -115,7 +115,6 @@ function startTimer(id, display) {
       saveTodos();
     }
 
-    // Update the todo's elapsed time
     todos = todos.map(t => {
       if (t.id === id) {
         return { ...t, elapsedTime };
@@ -169,13 +168,53 @@ function renderTodos() {
     const timerContainer = document.createElement('div');
     timerContainer.className = 'timer-container';
 
-    const timeInput = document.createElement('input');
-    timeInput.type = 'number';
-    timeInput.className = 'timer-input';
-    timeInput.placeholder = 'Min';
-    timeInput.min = 1;
-    timeInput.value = todo.targetTime ? todo.targetTime / (60 * 1000) : '';
-    timeInput.onchange = (e) => setTargetTime(todo.id, e.target.value);
+    // Hours input
+    const hoursInput = document.createElement('input');
+    hoursInput.type = 'number';
+    hoursInput.className = 'timer-input';
+    hoursInput.placeholder = 'Hr';
+    hoursInput.min = 0;
+
+    // Minutes input
+    const minutesInput = document.createElement('input');
+    minutesInput.type = 'number';
+    minutesInput.className = 'timer-input';
+    minutesInput.placeholder = 'Min';
+    minutesInput.min = 0;
+    minutesInput.max = 59;
+
+    // Seconds input
+    const secondsInput = document.createElement('input');
+    secondsInput.type = 'number';
+    secondsInput.className = 'timer-input';
+    secondsInput.placeholder = 'Sec';
+    secondsInput.min = 0;
+    secondsInput.max = 59;
+
+    // Set current values if target time exists
+    if (todo.targetTime) {
+      const hours = Math.floor(todo.targetTime / 3600000);
+      const minutes = Math.floor((todo.targetTime % 3600000) / 60000);
+      const seconds = Math.floor((todo.targetTime % 60000) / 1000);
+
+      hoursInput.value = hours;
+      minutesInput.value = minutes;
+      secondsInput.value = seconds;
+    }
+
+    // Update target time when any input changes
+    const updateTargetTime = () => {
+      setTargetTime(
+        todo.id,
+        hoursInput.value,
+        minutesInput.value,
+        secondsInput.value
+      );
+    };
+
+    hoursInput.onchange = updateTargetTime;
+    minutesInput.onchange = updateTargetTime;
+    secondsInput.onchange = updateTargetTime;
 
     const timerDisplay = document.createElement('span');
     timerDisplay.className = 'timer-display';
@@ -188,14 +227,34 @@ function renderTodos() {
     timerBtn.dataset.timerId = todo.id;
     timerBtn.onclick = () => toggleTimer(todo.id);
 
-    timerContainer.appendChild(timeInput);
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'reset-btn';
+    resetBtn.textContent = 'Reset';
+    resetBtn.onclick = () => resetTimer(todo.id);
+
+    timerContainer.appendChild(hoursInput);
+    timerContainer.appendChild(minutesInput);
+    timerContainer.appendChild(secondsInput);
     timerContainer.appendChild(timerDisplay);
     timerContainer.appendChild(timerBtn);
+    timerContainer.appendChild(resetBtn);
 
     const editBtn = document.createElement('button');
     editBtn.className = 'edit-btn';
     editBtn.textContent = 'Edit';
-    editBtn.onclick = () => showEditDialogue(todo.id);
+    editBtn.onclick = () => {
+      const newText = prompt('Edit todo:', todo.text);
+      if (newText && newText.trim()) {
+        todos = todos.map(t => {
+          if (t.id === todo.id) {
+            return { ...t, text: newText.trim() };
+          }
+          return t;
+        });
+        saveTodos();
+        renderTodos();
+      }
+    };
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'delete-btn';
@@ -207,6 +266,7 @@ function renderTodos() {
     todoItem.appendChild(timerContainer);
     todoItem.appendChild(editBtn);
     todoItem.appendChild(deleteBtn);
+
     todoList.appendChild(todoItem);
   });
 }
@@ -216,3 +276,6 @@ document.getElementById('todoInput').addEventListener('keypress', function(e) {
     addTodo();
   }
 });
+
+// Initial render
+renderTodos();
